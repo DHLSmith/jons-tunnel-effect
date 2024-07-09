@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torchbearer import Trial
-from torchbearer.callbacks import TensorBoard, TensorBoardText, MultiStepLR
+from torchbearer.callbacks import TensorBoard, TensorBoardText, MultiStepLR, TorchScheduler
 import torchbearer
 
 FORCE_MPS = False
@@ -33,7 +33,7 @@ def get_device(device):
     return device
 
 
-def fit_model(model, loss, opt, trainloader, valloader, epochs=1000, schedule=None, run_id=None, log_dir=None,
+def fit_model(model, loss, opt, trainloader, valloader, epochs=1000, schedule=None, gamma=None, run_id=None, log_dir=None,
               model_file=None, resume=None, device='auto', verbose=0,  pre_extra_callbacks=None, extra_callbacks=None,
               acc='binary_acc', period=1):
     print('==> Setting up callbacks..')
@@ -71,7 +71,7 @@ def fit_model(model, loss, opt, trainloader, valloader, epochs=1000, schedule=No
         cb.append(torchbearer.callbacks.MostRecent(model_file.replace(".pt", "_last.pt")))
         cb.append(torchbearer.callbacks.Interval(model_file, period=period, on_batch=False))
     if schedule is not None:
-        cb.append(MultiStepLR(schedule))
+        cb.append(MultiStepLR(schedule, gamma=gamma))
 
     print('==> Training model..')
     print('using device: ' + device)
@@ -97,17 +97,6 @@ def fit_model(model, loss, opt, trainloader, valloader, epochs=1000, schedule=No
     metrics = trial.evaluate(data_key=torchbearer.TEST_DATA)
 
     return trial, history, metrics
-
-
-def test_model(trial, te_dl, te_s_rand_dl, te_sc_rand_dl):
-    # tests:
-    res = trial.with_test_generator(te_dl).evaluate(data_key=torchbearer.TEST_DATA, verbose=0)
-    res_s = trial.with_test_generator(te_s_rand_dl).evaluate(data_key=torchbearer.TEST_DATA, verbose=0)
-    res_sc = trial.with_test_generator(te_sc_rand_dl).evaluate(data_key=torchbearer.TEST_DATA, verbose=0)
-
-    print('Standard: ', res)
-    print('Linear-Randomized or S-Randomized', res_s)
-    print('Slabs-Randomized or Sc-Randomized', res_sc)
 
 
 def evaluate_model(model, test_loader, metrics, extra_callbacks=None, device='auto'):

@@ -14,7 +14,7 @@ from utils.mlp import mlp6, mlp8, mlp10, mlp12
 
 PARAMETERS = {
     'vgg': {
-        'lr': 0.1,
+        'lr': 0.01,
         'momentum': 0.9,
         'weight_decay': 1e-4,
         'num_epochs': 160,
@@ -23,7 +23,7 @@ PARAMETERS = {
         'gamma': 0.1
     },
     'resnet': {
-        'lr': 0.1,
+        'lr': 0.01,
         'momentum': 0.9,
         'weight_decay': 1e-4,
         'num_epochs': 164,
@@ -45,13 +45,15 @@ PARAMETERS = {
 
 def train(args):
     # No augmentation? interesting...
+    tf = transforms.Compose([transforms.ToTensor(),
+                             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     if args.dataset == 'cifar10':
-        train_set = CIFAR10(root='./data', train=True, download=True, transform=transforms.ToTensor())
-        val_set = CIFAR10(root='./data', train=False, download=True, transform=transforms.ToTensor())
+        train_set = CIFAR10(root='/ssd/', train=True, download=True, transform=tf)
+        val_set = CIFAR10(root='/ssd/', train=False, download=True, transform=tf)
         n_classes = 10
     elif args.dataset == 'cifar100':
-        train_set = CIFAR100(root='./data', train=True, download=True, transform=transforms.ToTensor())
-        val_set = CIFAR100(root='./data', train=False, download=True, transform=transforms.ToTensor())
+        train_set = CIFAR100(root='/ssd/', train=True, download=True, transform=tf)
+        val_set = CIFAR100(root='/ssd/', train=False, download=True, transform=tf)
         n_classes = 100
     else:
         raise NotImplementedError
@@ -65,8 +67,8 @@ def train(args):
     else:
         raise NotImplementedError
 
-    train_dl = DataLoader(train_set, batch_size=params['batch_size'], shuffle=True, num_workers=2)
-    val_dl = DataLoader(val_set, batch_size=params['batch_size'], shuffle=False, num_workers=2)
+    train_dl = DataLoader(train_set, batch_size=params['batch_size'], shuffle=True, num_workers=3)
+    val_dl = DataLoader(val_set, batch_size=params['batch_size'], shuffle=False, num_workers=1)
 
     model = globals()[args.model](num_classes=n_classes)
     loss = torch.nn.CrossEntropyLoss()  # presumably!
@@ -74,16 +76,10 @@ def train(args):
     optimiser = torch.optim.SGD(model.parameters(), lr=params['lr'], momentum=params['momentum'],
                                 weight_decay=params['weight_decay'])
 
-    if params['milestones'] is None:
-        scheduler = None
-    else:
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimiser, milestones=params['milestones'],
-                                                         gamma=params['gamma'])
-
-    fit_model(model, loss, optimiser, train_dl, val_dl, epochs=params['num_epochs'], schedule=scheduler,
-              run_id=None, log_dir="./logs",
-              model_file="./models/" + args.model + "-" + args.dataset + ".{epoch:03d}.pt",
-              device='auto', verbose=1, acc='acc', period=10)
+    fit_model(model, loss, optimiser, train_dl, val_dl, epochs=params['num_epochs'], schedule=params['milestones'],
+              gamma=params['gamma'], run_id=f"{args.model}-{args.dataset}", log_dir="/ssd/tunnel/logs",
+              model_file="/ssd/tunnel/models/" + args.model + "-" + args.dataset + ".{epoch:03d}.pt",
+              device='auto', verbose=2, acc='acc', period=10)
 
 
 if __name__ == '__main__':
