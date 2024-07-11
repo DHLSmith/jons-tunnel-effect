@@ -2,11 +2,16 @@ from torch import nn
 
 
 def _make_mlp(num_classes, depth):
+    mdl = []
+    for i in range(depth - 2):
+        mdl.append(nn.Linear(in_features=1024, out_features=1024))
+        mdl.append(nn.ReLU())
+
     return nn.Sequential(
         nn.Flatten(),
         nn.Linear(in_features=32 * 32 * 3, out_features=1024),
         nn.ReLU(),
-        *[nn.Linear(in_features=1024, out_features=1024), nn.ReLU()] * depth - 2,
+        *mdl,
         nn.Linear(in_features=1024, out_features=num_classes)
     )
 
