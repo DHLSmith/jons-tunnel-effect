@@ -9,7 +9,7 @@ from torchvision.transforms import transforms
 from tqdm import tqdm
 
 from utils import modelfitting
-from utils.modelfitting import get_device
+from utils.modelfitting import get_device, evaluate_model
 from utils.rank import estimate_rank
 
 # mdl = vgg19(num_classes=10)
@@ -48,11 +48,7 @@ with torch.no_grad():
             m.register_forward_hook(make_hook(name))
             layers[name] = m
 
-    mdl.to(get_device("auto"))
-    for e, (x, y) in tqdm(enumerate(train_dl)):
-        mdl(x.to(get_device("auto")))
-        if e == 100:
-            break
+    evaluate_model(mdl, val_dl, 'acc', )
 
     for name, fvs in features.items():
         f = torch.cat(fvs, dim=0)
