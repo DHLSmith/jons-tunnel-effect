@@ -65,6 +65,7 @@ def main():
     parser.add_argument('--output', type=str, default='./results/')
     parser.add_argument('-nf', '--num-features', type=int, default=8000)
     parser.add_argument('--train', default=False, action='store_true')
+    parser.add_argument('--skip', default=False, action='store_true')
     parser.add_argument('files', nargs='*')
 
     args = parser.parse_args()
@@ -73,6 +74,8 @@ def main():
         params = parse_model_filename(filename)
         set_seed(params['seed'])
         out_filename = filename.split('/')[-1].replace('.pt', '-train.csv' if args.train else '-test.csv')
+        if args.skip and os.path.exists(out_filename):
+            continue
 
         num_classes, train_set, val_set = get_data(params['dataset'], args.root)
         if args.train:
