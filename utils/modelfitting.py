@@ -141,7 +141,7 @@ def fit_model(model, loss, opt, trainloader, valloader, epochs=1000, schedule=No
     return trial, history, metrics
 
 
-def evaluate_model(model, test_loader, metrics, extra_callbacks=None, device='auto'):
+def evaluate_model(model, test_loader, metrics, extra_callbacks=None, device='auto', verbose=0):
     device = get_device(device)
 
     cb = []
@@ -153,7 +153,7 @@ def evaluate_model(model, test_loader, metrics, extra_callbacks=None, device='au
     if not isinstance(metrics, (list, tuple)):
         metrics = [metrics]
 
-    return (torchbearer.Trial(model, None, None, metrics=metrics, callbacks=cb, verbose=0)
+    return (torchbearer.Trial(model, None, None, metrics=metrics, callbacks=cb, verbose=verbose)
             .with_val_generator(test_loader).to(device).evaluate())
 
 
