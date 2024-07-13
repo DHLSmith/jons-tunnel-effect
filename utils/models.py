@@ -19,7 +19,7 @@ def get_model(name: str) -> Union[nn.Module, None]:
 
 
 def get_model_filename(params: dict) -> str:
-    fn = "{params['model']}-{params['dataset']}-lr{params['lr']}-seed{params['seed']}"
+    fn = f"{params['model']}-{params['dataset']}-lr{params['lr']}-seed{params['seed']}"
 
     return f"{params['output']}/models/{fn}" + "-{epoch:03d}.pt"
 
