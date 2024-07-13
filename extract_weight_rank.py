@@ -74,7 +74,7 @@ def main():
         params = parse_model_filename(filename)
         set_seed(params['seed'])
         out_filename = filename.split('/')[-1].replace('.pt', '-train.csv' if args.train else '-test.csv')
-        if args.skip and os.path.exists(out_filename):
+        if args.skip and os.path.exists(f"{args.output}/{out_filename}"):
             continue
 
         num_classes, train_set, val_set = get_data(params['dataset'], args.root)
