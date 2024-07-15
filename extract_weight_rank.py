@@ -24,7 +24,7 @@ def install_hooks(mdl):
     features = {}
     handles = []
     for name, m in mdl.named_modules():
-        if "conv" in name or isinstance(m, nn.Conv2d):
+        if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
             features[name] = []
 
             handles.append(m.register_forward_hook(make_hook(name, features)))
