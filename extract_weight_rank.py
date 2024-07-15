@@ -52,7 +52,7 @@ def perform_analysis(features, layers, params=None, n=8000):
 
         rec['features_rank'] = rank
         rec['features_dim'] = f.shape[1]
-        rec['normalized_features_rank'] = rank / f.shape[1]
+        rec['normalized_features_rank'] = rank / min(f.shape[1], f.shape[0])
         rec['weights_rank'] = w_rank
         results.append(rec)
 
