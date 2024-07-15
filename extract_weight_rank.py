@@ -77,6 +77,8 @@ def main():
         if args.skip and os.path.exists(f"{args.output}/{out_filename}"):
             continue
 
+        print(f"{args.output}/{out_filename}")
+
         num_classes, train_set, val_set = get_data(params['dataset'], args.root)
         if args.train:
             dl = DataLoader(train_set, batch_size=128, shuffle=False, num_workers=0)
