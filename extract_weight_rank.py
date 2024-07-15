@@ -1,9 +1,11 @@
 import argparse
+import gc
 import os.path
 
 import pandas as pd
 import torch
 from torch import nn
+from torch.linalg import LinAlgError
 from torch.utils.data import DataLoader
 
 from utils.datasets import get_data
@@ -36,25 +38,28 @@ def install_hooks(mdl):
 def perform_analysis(features, layers, params=None, n=8000):
     results = []
 
-    for name, fvs in features.items():
-        rec = {'name': name}
-        if params is not None:
-            rec.update(params)
+    try:
+        for name, fvs in features.items():
+            rec = {'name': name}
+            if params is not None:
+                rec.update(params)
 
-        f = torch.cat(fvs, dim=0)
-        f = f.view(f.shape[0], -1)
-        rank = estimate_rank(f, n=n, thresh=1e-3)
+            f = torch.cat(fvs, dim=0)
+            f = f.view(f.shape[0], -1)
+            rank = estimate_rank(f, n=n, thresh=1e-3)
 
-        w = layers[name].weight
-        w = w.view(w.shape[0], -1)
-        w = torch.cat([w, w], dim=0)
-        w_rank = torch.linalg.matrix_rank(w, hermitian=False, rtol=1e-3).cpu().item()
+            w = layers[name].weight
+            w = w.view(w.shape[0], -1)
+            w = torch.cat([w, w], dim=0)
+            w_rank = torch.linalg.matrix_rank(w, hermitian=False, rtol=1e-3).cpu().item()
 
-        rec['features_rank'] = rank
-        rec['features_dim'] = f.shape[1]
-        rec['normalized_features_rank'] = rank / min(f.shape[1], f.shape[0])
-        rec['weights_rank'] = w_rank
-        results.append(rec)
+            rec['features_rank'] = rank
+            rec['features_dim'] = f.shape[1]
+            rec['normalized_features_rank'] = rank / min(f.shape[1], f.shape[0])
+            rec['weights_rank'] = w_rank
+            results.append(rec)
+    except LinAlgError:
+        pass
 
     return pd.DataFrame.from_records(results)
 
@@ -99,6 +104,9 @@ def main():
             params.update(metrics)
             df = perform_analysis(features, layers, params, n=args.num_features)
             df.to_csv(f"{args.output}/{out_filename}")
+
+        del num_classes, train_set, val_set, dl, mdl, layers, features, metrics, params
+        gc.collect()
 
 
 if __name__ == '__main__':
