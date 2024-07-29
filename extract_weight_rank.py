@@ -59,9 +59,9 @@ def perform_analysis(features, classes, layers, params=None, n=8000):
 
             for c in range(classes.max()):
                 cf = f[classes == c]
-                cr = estimate_rank(f, n=n, thresh=1e-3)
+                cr = estimate_rank(cf, n=n, thresh=1e-3)
                 rec['features_rank_'+str(c)] = cr
-                rec['normalized_features_rank_'+str(c)] = cr / min(f.shape[1], cf.shape[0])
+                rec['normalized_features_rank_'+str(c)] = cr / min(cf.shape[1], cf.shape[0])
 
             results.append(rec)
     except LinAlgError:
