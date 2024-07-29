@@ -109,7 +109,7 @@ def main():
             metrics = evaluate_model(mdl, dl, 'acc', verbose=2)
             params.update(metrics)
 
-            classes = torch.stack([y.cpu() for _, y in dl])
+            classes = torch.cat([y.cpu() for _, y in dl])
 
             df = perform_analysis(features, classes, layers, params, n=args.num_features)
             df.to_csv(f"{args.output}/{out_filename}")
