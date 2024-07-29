@@ -35,7 +35,7 @@ def install_hooks(mdl):
     return layers, features
 
 
-def perform_analysis(features, layers, params=None, n=8000):
+def perform_analysis(features, classes, layers, params=None, n=8000):
     results = []
 
     try:
@@ -50,13 +50,19 @@ def perform_analysis(features, layers, params=None, n=8000):
 
             w = layers[name].weight
             w = w.view(w.shape[0], -1)
-            w = torch.cat([w, w], dim=0)
             w_rank = torch.linalg.matrix_rank(w, hermitian=False, rtol=1e-3).cpu().item()
 
             rec['features_rank'] = rank
             rec['features_dim'] = f.shape[1]
             rec['normalized_features_rank'] = rank / min(f.shape[1], f.shape[0])
             rec['weights_rank'] = w_rank
+
+            for c in range(classes.max()):
+                cf = f[classes == c]
+                cr = estimate_rank(f, n=n, thresh=1e-3)
+                rec['features_rank_'+str(c)] = cr
+                rec['normalized_features_rank_'+str(c)] = cr / min(f.shape[1], cf.shape[0])
+
             results.append(rec)
     except LinAlgError:
         pass
@@ -102,7 +108,10 @@ def main():
 
             metrics = evaluate_model(mdl, dl, 'acc', verbose=2)
             params.update(metrics)
-            df = perform_analysis(features, layers, params, n=args.num_features)
+
+            classes = torch.stack([y.cpu() for _, y in dl])
+
+            df = perform_analysis(features, classes, layers, params, n=args.num_features)
             df.to_csv(f"{args.output}/{out_filename}")
 
         del num_classes, train_set, val_set, dl, mdl, layers, features, metrics, params
