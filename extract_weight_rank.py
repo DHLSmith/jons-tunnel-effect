@@ -7,6 +7,7 @@ import torch
 from torch import nn
 from torch.linalg import LinAlgError
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from utils.datasets import get_data
 from utils.modelfitting import evaluate_model, set_seed
@@ -39,7 +40,7 @@ def perform_analysis(features, classes, layers, params=None, n=8000):
     results = []
 
     try:
-        for name, fvs in features.items():
+        for name, fvs in tqdm(features.items()):
             rec = {'name': name}
             if params is not None:
                 rec.update(params)
@@ -57,7 +58,7 @@ def perform_analysis(features, classes, layers, params=None, n=8000):
             rec['normalized_features_rank'] = rank / min(f.shape[1], f.shape[0])
             rec['weights_rank'] = w_rank
 
-            for c in range(classes.max()):
+            for c in range(classes.max() + 1):
                 cf = f[classes == c]
                 cr = estimate_rank(cf, n=n, thresh=1e-3)
                 rec['features_rank_'+str(c)] = cr
