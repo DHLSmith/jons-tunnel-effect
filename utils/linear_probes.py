@@ -60,7 +60,7 @@ class LinearProbe(TrainableAnalyser):
 
         feature_extractor = feature_extractor.to(device=self.device)
         trmodel = TrModel(self.num_classes).to(self.device)
-        self.model = trmodel
+        self.model = trmodel.model
 
         loss = nn.CrossEntropyLoss()
         optimizer = self.optimizer(self.model.parameters(), **self.optimizer_params)
