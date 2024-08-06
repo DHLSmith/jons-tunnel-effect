@@ -35,7 +35,7 @@ class FeatureExtractor(nn.Module):
 
 
 class LinearProbe(TrainableAnalyser):
-    def __init__(self, num_classes=10, batch_size=512, num_epochs=1, optimizer=Adam,
+    def __init__(self, num_classes=10, batch_size=512, num_epochs=30, optimizer=Adam,
                  optimizer_params=DEFAULT_LINEAR_PROBE_OPTIM_PARAMS, device='auto'):
         super().__init__()
         self.num_classes = num_classes
