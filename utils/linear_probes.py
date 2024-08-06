@@ -12,6 +12,28 @@ from utils.modelfitting import fit_model, evaluate_model
 DEFAULT_LINEAR_PROBE_OPTIM_PARAMS = MappingProxyType({'lr': 0.001, 'weight_decay': 0})
 
 
+class FeatureExtractor(nn.Module):
+    def __init__(self, model: nn.Module, layer_name):
+        super().__init__()
+        self.model = model
+        self.features = None
+
+        def hook(_, __, output):
+            self.features = output
+
+        for name, module in model.named_modules():
+            if layer_name == name:
+                self.hndl = module.register_forward_hook(hook)
+
+    def __del__(self):
+        self.hndl.remove()
+
+    def forward(self, x):
+        self.model.eval()
+        self.model(x)
+        return self.features.view(self.features.shape[0], -1)
+
+
 class LinearProbe(TrainableAnalyser):
     def __init__(self, num_classes=10, batch_size=512, num_epochs=30, optimizer=Adam,
                  optimizer_params=DEFAULT_LINEAR_PROBE_OPTIM_PARAMS, device='auto'):
@@ -25,7 +47,7 @@ class LinearProbe(TrainableAnalyser):
         self.device = device
         self.predictions = []
 
-    def train(self, dataset: Dataset, feature_extractor: Callable):
+    def train(self, dataset: Dataset, feature_extractor: FeatureExtractor):
         class TrModel(nn.Module):
             def __init__(self, num_classes):
                 super().__init__()
@@ -36,7 +58,8 @@ class LinearProbe(TrainableAnalyser):
                     x = feature_extractor(x)
                 return self.model(x)
 
-        trmodel = TrModel(self.num_classes)
+        feature_extractor = feature_extractor.to(device=self.device)
+        trmodel = TrModel(self.num_classes).to(self.device)
         self.model = trmodel
 
         loss = nn.CrossEntropyLoss()

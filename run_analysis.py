@@ -18,28 +18,6 @@ from utils.models import parse_model_filename, get_model
 from utils.rank import RankAnalyser, CovarianceSpectrumStatisticsAnalyser
 
 
-class FeatureExtractor(nn.Module):
-    def __init__(self, model: nn.Module, layer_name):
-        super().__init__()
-        self.model = model
-        self.features = None
-
-        def hook(_, __, output):
-            self.features = output
-
-        for name, module in model.named_modules():
-            if layer_name == name:
-                self.hndl = module.register_forward_hook(hook)
-
-    def __del__(self):
-        self.hndl.remove()
-
-    def forward(self, x):
-        self.model.eval()
-        self.model(x)
-        return self.features.view(self.features.shape[0], -1)
-
-
 class AnalysisHook(Callback):
     def __init__(self, analyser, layer_name):
         super().__init__()
