@@ -53,7 +53,9 @@ def install_hooks(mdl, train_set):
 
     for name, m in mdl.named_modules():
         if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
-            analysers[name] = AnalyserList(NameAnalyser(), CovarianceSpectrumStatisticsAnalyser(), lp[name])
+            analysers[name] = AnalyserList(NameAnalyser(),
+                                           # CovarianceSpectrumStatisticsAnalyser(),
+                                           lp[name])
 
             cb = AnalysisHook(analysers[name], name)
             handles.append(m.register_forward_hook(cb))

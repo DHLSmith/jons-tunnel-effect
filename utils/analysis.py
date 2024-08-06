@@ -32,7 +32,9 @@ class AnalyserList(Analyser):
         result = dict()
 
         for analyser in self.analysers:
-            result.update(analyser.get_result())
+            clz = type(analyser).__name__
+            for k, v in analyser.get_result().items():
+                result[f"{clz}.{k}"] = v
 
         return result
 
