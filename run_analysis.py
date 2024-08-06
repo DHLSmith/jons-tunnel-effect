@@ -49,6 +49,7 @@ def install_hooks(mdl, train_set):
             fe = FeatureExtractor(mdl, name)
             lp[name].train(train_set, fe)
             del fe
+            break
 
     for name, m in mdl.named_modules():
         if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
@@ -57,6 +58,7 @@ def install_hooks(mdl, train_set):
             cb = AnalysisHook(analysers[name], name)
             handles.append(m.register_forward_hook(cb))
             callbacks.append(cb)
+            break
 
     return analysers, handles, callbacks
 
