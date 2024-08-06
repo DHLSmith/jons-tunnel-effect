@@ -69,7 +69,7 @@ class LinearProbe(TrainableAnalyser):
         loader = DataLoader(dataset=dataset, batch_size=self.batch_size, shuffle=True)
         trial, history, _ = fit_model(trmodel, loss, optimizer, loader, None, epochs=self.num_epochs,
                                       device=self.device, verbose=2)
-        self.train_metrics = history[-1]
+        self.train_metrics = {'train_acc', history[-1]['acc']}
 
     def process_batch(self, features: torch.Tensor, classes: torch.Tensor, layer: nn.Module, name) -> None:
         pred = self.model(features.to(self.model.weight.device).view(features.shape[0], -1))
