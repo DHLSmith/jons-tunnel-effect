@@ -7,7 +7,7 @@ from torch.optim import Adam
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 
 from utils.analysis import Analyser, TrainableAnalyser
-from utils.modelfitting import fit_model, evaluate_model
+from utils.modelfitting import fit_model, evaluate_model, get_device
 
 DEFAULT_LINEAR_PROBE_OPTIM_PARAMS = MappingProxyType({'lr': 0.001, 'weight_decay': 0})
 
@@ -44,7 +44,7 @@ class LinearProbe(TrainableAnalyser):
         self.optimizer = optimizer
         self.optimizer_params = optimizer_params
         self.model = None
-        self.device = device
+        self.device = get_device(device)
         self.predictions = []
 
     def train(self, dataset: Dataset, feature_extractor: FeatureExtractor):
