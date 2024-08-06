@@ -39,15 +39,20 @@ def install_hooks(mdl, train_set):
     analysers = {}
     handles = []
     callbacks = []
+
+    lp = {}
     for name, m in mdl.named_modules():
         if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
-            lp = LinearProbe()
+            lp[name] = LinearProbe()
 
             print(f"training probe for {name}")
             fe = FeatureExtractor(mdl, name)
-            lp.train(train_set, fe)
-            analysers[name] = AnalyserList(NameAnalyser(), CovarianceSpectrumStatisticsAnalyser(), lp)
+            lp[name].train(train_set, fe)
             del fe
+
+    for name, m in mdl.named_modules():
+        if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
+            analysers[name] = AnalyserList(NameAnalyser(), CovarianceSpectrumStatisticsAnalyser(), lp[name])
 
             cb = AnalysisHook(analysers[name], name)
             handles.append(m.register_forward_hook(cb))
