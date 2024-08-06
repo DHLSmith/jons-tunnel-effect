@@ -1,0 +1,55 @@
+from types import MappingProxyType
+from typing import Callable
+
+import torch
+from torch import nn as nn
+from torch.optim import Adam
+from torch.utils.data import Dataset, DataLoader, TensorDataset
+
+from utils.analysis import Analyser, TrainableAnalyser
+from utils.modelfitting import fit_model, evaluate_model
+
+DEFAULT_LINEAR_PROBE_OPTIM_PARAMS = MappingProxyType({'lr': 0.001, 'weight_decay': 0})
+
+
+class LinearProbe(TrainableAnalyser):
+    def __init__(self, num_classes=10, batch_size=512, num_epochs=30, optimizer=Adam,
+                 optimizer_params=DEFAULT_LINEAR_PROBE_OPTIM_PARAMS, device='auto'):
+        super().__init__()
+        self.num_classes = num_classes
+        self.batch_size = batch_size
+        self.num_epochs = num_epochs
+        self.optimizer = optimizer
+        self.optimizer_params = optimizer_params
+        self.model = None
+        self.device = device
+        self.predictions = []
+
+    def train(self, dataset: Dataset, feature_extractor: Callable):
+        class TrModel(nn.Module):
+            def __init__(self, num_classes):
+                super().__init__()
+                self.model = nn.LazyLinear(num_classes)
+
+            def forward(self, x):
+                with torch.no_grad():
+                    x = feature_extractor(x)
+                return self.model(x)
+
+        trmodel = TrModel(self.num_classes)
+        self.model = trmodel
+
+        loss = nn.CrossEntropyLoss()
+        optimizer = self.optimizer(self.model.parameters(), **self.optimizer_params)
+
+        loader = DataLoader(dataset=dataset, batch_size=self.batch_size, shuffle=True)
+        trial, history, _ = fit_model(trmodel, loss, optimizer, loader, None, epochs=self.num_epochs,
+                                      device=self.device, verbose=2)
+
+    def process_batch(self, features: torch.Tensor, classes: torch.Tensor, layer: nn.Module, name) -> None:
+        pred = self.model(features.to(self.model.weight.device))
+        self.predictions.append((pred.cpu(), classes.cpu()))
+
+    def get_result(self) -> dict:
+        return evaluate_model(nn.Identity(), self.predictions, 'acc')
+

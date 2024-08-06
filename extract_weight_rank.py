@@ -33,7 +33,7 @@ def install_hooks(mdl):
             handles.append(m.register_forward_hook(make_hook(name, features)))
             layers[name] = m
 
-    return layers, features
+    return layers, features, handles
 
 
 def perform_analysis(features, classes, layers, params=None, n=8000):
@@ -47,7 +47,7 @@ def perform_analysis(features, classes, layers, params=None, n=8000):
 
             f = torch.cat(fvs, dim=0)
             f = f.view(f.shape[0], -1)
-            rank = estimate_rank(f, n=n, thresh=1e-3)
+            rank = estimate_rank(f, n=n, threshold=1e-3)
 
             w = layers[name].weight
             w = w.view(w.shape[0], -1)
@@ -60,7 +60,7 @@ def perform_analysis(features, classes, layers, params=None, n=8000):
 
             for c in range(classes.max() + 1):
                 cf = f[classes == c]
-                cr = estimate_rank(cf, n=n, thresh=1e-3)
+                cr = estimate_rank(cf, n=n, threshold=1e-3)
                 rec['features_rank_'+str(c)] = cr
                 rec['normalized_features_rank_'+str(c)] = cr / min(cf.shape[1], cf.shape[0])
 
@@ -105,9 +105,13 @@ def main():
             print("Warning: weights file didn't exist. Going to log a random model")
 
         with torch.no_grad():
-            layers, features = install_hooks(mdl)
+            layers, features, handles = install_hooks(mdl)
 
             metrics = evaluate_model(mdl, dl, 'acc', verbose=2)
+
+            for h in handles:
+                h.remove()
+
             params.update(metrics)
 
             classes = torch.cat([y.cpu() for _, y in dl])
