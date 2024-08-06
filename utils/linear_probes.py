@@ -35,7 +35,7 @@ class FeatureExtractor(nn.Module):
 
 
 class LinearProbe(TrainableAnalyser):
-    def __init__(self, num_classes=10, batch_size=512, num_epochs=30, optimizer=Adam,
+    def __init__(self, num_classes=10, batch_size=512, num_epochs=1, optimizer=Adam,
                  optimizer_params=DEFAULT_LINEAR_PROBE_OPTIM_PARAMS, device='auto'):
         super().__init__()
         self.num_classes = num_classes
@@ -69,6 +69,7 @@ class LinearProbe(TrainableAnalyser):
         loader = DataLoader(dataset=dataset, batch_size=self.batch_size, shuffle=True)
         trial, history, _ = fit_model(trmodel, loss, optimizer, loader, None, epochs=self.num_epochs,
                                       device=self.device, verbose=2)
+        print(history)
         self.train_metrics = history[-1][1]
 
     def process_batch(self, features: torch.Tensor, classes: torch.Tensor, layer: nn.Module, name) -> None:
