@@ -70,7 +70,7 @@ class LinearProbe(TrainableAnalyser):
                                       device=self.device, verbose=2)
 
     def process_batch(self, features: torch.Tensor, classes: torch.Tensor, layer: nn.Module, name) -> None:
-        pred = self.model(features.to(self.model.weight.device))
+        pred = self.model(features.to(self.model.weight.device).view(features.shape[0], -1))
         self.predictions.append((pred.cpu(), classes.cpu()))
 
     def get_result(self) -> dict:
