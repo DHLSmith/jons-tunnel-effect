@@ -12,7 +12,7 @@ from torchbearer import Callback
 
 from utils.analysis import AnalyserList, NameAnalyser, TrainableAnalyser
 from utils.datasets import get_data
-from utils.linear_probes import LinearProbe
+from utils.linear_probes import LinearProbe, FeatureExtractor
 from utils.modelfitting import evaluate_model, set_seed
 from utils.models import parse_model_filename, get_model
 from utils.rank import RankAnalyser, CovarianceSpectrumStatisticsAnalyser
