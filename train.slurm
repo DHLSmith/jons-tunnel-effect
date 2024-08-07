@@ -1,3 +1,4 @@
+#!/bin/sh
 #SBATCH -p a100
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
