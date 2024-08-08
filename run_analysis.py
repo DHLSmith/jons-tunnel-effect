@@ -45,10 +45,10 @@ def install_hooks(mdl, train_set):
         if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
             lp[name] = LinearProbe()
 
-            print(f"training probe for {name}")
+            print(f"Extracting features for training probe {name}")
             fe = FeatureExtractor(mdl, name)
             ds = fe.create_tensor_dataset(train_set)
-            print(f"dimensions: {ds[0][0].shape.item()}")
+            print(f"training probe for {name}, dimensions: {ds[0][0].shape.item()}")
             lp[name].train(ds)
             del fe  # remove hooks
 

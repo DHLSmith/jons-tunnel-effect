@@ -20,6 +20,7 @@ class FeatureExtractor(nn.Module):
 
         def hook(_, __, output):
             self.features = output
+            raise StopIteration
 
         for name, module in model.named_modules():
             if layer_name == name:
@@ -29,8 +30,11 @@ class FeatureExtractor(nn.Module):
         self.hndl.remove()
 
     def forward(self, x):
-        self.model.eval()
-        self.model(x)
+        try:
+            self.model.eval()
+            self.model(x)
+        except StopIteration:
+            pass
         return self.features.view(self.features.shape[0], -1)
 
     def create_tensor_dataset(self, dataset: Dataset, batch_size: int = 128):
