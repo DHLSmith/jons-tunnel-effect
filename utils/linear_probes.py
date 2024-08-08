@@ -85,7 +85,7 @@ class LinearProbe(TrainableAnalyser):
         self.train_metrics = None
 
     def train(self, dataset: Dataset):
-        self.model = nn.LazyLinear(self.num_classes)
+        self.model = nn.Linear(dataset[0][0].shape[0], self.num_classes)
 
         loss = nn.CrossEntropyLoss()
         optimizer = self.optimizer(self.model.parameters(), **self.optimizer_params)
