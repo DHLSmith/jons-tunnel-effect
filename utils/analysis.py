@@ -41,7 +41,7 @@ class AnalyserList(Analyser):
 
 class TrainableAnalyser(Analyser):
     @abc.abstractmethod
-    def train(self, dataset: Dataset, feature_extractor: Callable):
+    def train(self, dataset: Dataset):
         pass
 
 

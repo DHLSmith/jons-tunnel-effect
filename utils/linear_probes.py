@@ -33,6 +33,38 @@ class FeatureExtractor(nn.Module):
         self.model(x)
         return self.features.view(self.features.shape[0], -1)
 
+    def create_tensor_dataset(self, dataset: Dataset, batch_size: int = 128):
+        loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, drop_last=False)
+        features = []
+        classes = []
+
+        for x, y in loader:
+            with torch.no_grad():
+                features.append(self(x))
+                classes.append(y)
+
+        return TensorDataset(torch.cat(features), torch.cat(classes))
+
+    def create_dynamic_dataset(self, dataset: Dataset, batch_size: int = 128):
+        def get_feature(x):
+            with torch.no_grad():
+                return self(x.unsqueeze)[0]
+        class DynDataset(Dataset):
+            def __init__(self, ds: Dataset):
+                self.dataset = ds
+
+            def __getitem__(self, index):
+                x, y = self.dataset[index]
+
+                f = get_feature(x)
+
+                return f, y
+
+            def __len__(self):
+                return len(self.dataset)
+
+        return DynDataset(dataset)
+
 
 class LinearProbe(TrainableAnalyser):
     def __init__(self, num_classes=10, batch_size=512, num_epochs=30, optimizer=Adam,
@@ -48,27 +80,15 @@ class LinearProbe(TrainableAnalyser):
         self.predictions = []
         self.train_metrics = None
 
-    def train(self, dataset: Dataset, feature_extractor: FeatureExtractor):
-        class TrModel(nn.Module):
-            def __init__(self, num_classes):
-                super().__init__()
-                self.model = nn.LazyLinear(num_classes)
-
-            def forward(self, x):
-                with torch.no_grad():
-                    x = feature_extractor(x)
-                return self.model(x)
-
-        feature_extractor = feature_extractor.to(device=self.device)
-        trmodel = TrModel(self.num_classes).to(self.device)
-        self.model = trmodel.model
+    def train(self, dataset: Dataset):
+        self.model = nn.LazyLinear(self.num_classes)
 
         loss = nn.CrossEntropyLoss()
         optimizer = self.optimizer(self.model.parameters(), **self.optimizer_params)
 
         loader = DataLoader(dataset=dataset, batch_size=self.batch_size, shuffle=True)
-        trial, history, _ = fit_model(trmodel, loss, optimizer, loader, None, epochs=self.num_epochs,
-                                      device=self.device, verbose=1)
+        trial, history, _ = fit_model(self.model, loss, optimizer, loader, None, epochs=self.num_epochs,
+                                      device=self.device, verbose=2)
         self.train_metrics = {'train_acc', history[-1]['acc']}
 
     def process_batch(self, features: torch.Tensor, classes: torch.Tensor, layer: nn.Module, name) -> None:
@@ -76,7 +96,8 @@ class LinearProbe(TrainableAnalyser):
         self.predictions.append((pred.cpu(), classes.cpu()))
 
     def get_result(self) -> dict:
-        res = evaluate_model(nn.Identity(), self.predictions, 'acc')
+        res = {}
+        res.update(evaluate_model(nn.Identity(), self.predictions, 'acc'))
         res.update(self.train_metrics)
         return res
 
