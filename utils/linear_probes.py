@@ -28,7 +28,12 @@ class FeatureExtractor(nn.Module):
                 break
 
     def __del__(self):
-        self.hndl.remove()
+        self.unhook()
+
+    def unhook(self):
+        if self.hndl is not None:
+            self.hndl.remove()
+            self.hndl = None
 
     def forward(self, x):
         try:
