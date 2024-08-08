@@ -25,6 +25,7 @@ class FeatureExtractor(nn.Module):
         for name, module in model.named_modules():
             if layer_name == name:
                 self.hndl = module.register_forward_hook(hook)
+                break
 
     def __del__(self):
         self.hndl.remove()
