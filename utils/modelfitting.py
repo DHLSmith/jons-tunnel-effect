@@ -134,7 +134,7 @@ def fit_model(model, loss, opt, trainloader, valloader, epochs=1000, schedule=No
         state = torch.load(resume)
         trial.load_state_dict(state)
         trial.replay()
-    else:
+    elif model_file is not None:
         trial.state[torchbearer.EPOCH] = 0
         trial.state[torchbearer.METRICS] = {}
         torchbearer.callbacks.MostRecent(model_file).on_checkpoint(trial.state)
