@@ -1,10 +1,10 @@
 from types import MappingProxyType
-from typing import Callable
 
 import torch
 from torch import nn as nn
 from torch.optim import Adam
 from torch.utils.data import Dataset, DataLoader, TensorDataset
+from tqdm import tqdm
 
 from utils.analysis import Analyser, TrainableAnalyser
 from utils.modelfitting import fit_model, evaluate_model, get_device
@@ -38,7 +38,7 @@ class FeatureExtractor(nn.Module):
         features = []
         classes = []
 
-        for x, y in loader:
+        for x, y in tqdm(loader):
             with torch.no_grad():
                 features.append(self(x))
                 classes.append(y)
