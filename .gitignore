@@ -2,3 +2,4 @@
 MNIST/
 utils/.ipynb_checkpoints/
 __pycache__/
+*log.txt
