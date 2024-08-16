@@ -1,6 +1,7 @@
 from types import MappingProxyType
 
 import torch
+import torchvision.transforms.functional
 from torch import nn as nn
 from torch.optim import Adam
 from torch.utils.data import Dataset, DataLoader, TensorDataset
@@ -41,7 +42,7 @@ class FeatureExtractor(nn.Module):
             self.model(x)
         except StopIteration:
             pass
-        return self.features.view(self.features.shape[0], -1)
+        return self.features
 
     def create_tensor_dataset(self, dataset: Dataset, batch_size: int = 128):
         loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False, drop_last=False)
@@ -53,27 +54,29 @@ class FeatureExtractor(nn.Module):
                 features.append(self(x))
                 classes.append(y)
 
-        return TensorDataset(torch.cat(features), torch.cat(classes))
+        features = torch.stack(features)
 
-    def create_dynamic_dataset(self, dataset: Dataset, batch_size: int = 128):
-        def get_feature(x):
-            with torch.no_grad():
-                return self(x.unsqueeze)[0]
-        class DynDataset(Dataset):
-            def __init__(self, ds: Dataset):
-                self.dataset = ds
+        return TensorDataset(features, torch.cat(classes))
 
-            def __getitem__(self, index):
-                x, y = self.dataset[index]
-
-                f = get_feature(x)
-
-                return f, y
-
-            def __len__(self):
-                return len(self.dataset)
-
-        return DynDataset(dataset)
+    # def create_dynamic_dataset(self, dataset: Dataset, batch_size: int = 128):
+    #     def get_feature(x):
+    #         with torch.no_grad():
+    #             return self(x.unsqueeze)[0]
+    #     class DynDataset(Dataset):
+    #         def __init__(self, ds: Dataset):
+    #             self.dataset = ds
+    #
+    #         def __getitem__(self, index):
+    #             x, y = self.dataset[index]
+    #
+    #             f = get_feature(x)
+    #
+    #             return f, y
+    #
+    #         def __len__(self):
+    #             return len(self.dataset)
+    #
+    #     return DynDataset(dataset)
 
 
 class LinearProbe(TrainableAnalyser):
@@ -89,20 +92,32 @@ class LinearProbe(TrainableAnalyser):
         self.device = get_device(device)
         self.predictions = []
         self.train_metrics = None
+        self.mean = None
+        self.std = None
 
-    def train(self, dataset: Dataset):
+    def train(self, dataset: TensorDataset):
         self.model = nn.Linear(dataset[0][0].shape[0], self.num_classes)
+
+        self.mean = dataset.tensors[0].mean(dim=(0, 2, 3)).tolist()
+        self.std = dataset.tensors[0].mean(dim=(0, 2, 3)).tolist()
+        ndata = torchvision.transforms.functional.normalize(dataset.tensors[0], self.mean, self.std, inplace=True)
+        ndata = ndata.view(dataset.tensors[0].shape[0], -1)
+        dataset = TensorDataset(ndata, dataset.tensors[1])
 
         loss = nn.CrossEntropyLoss()
         optimizer = self.optimizer(self.model.parameters(), **self.optimizer_params)
 
         loader = DataLoader(dataset=dataset, batch_size=self.batch_size, shuffle=True)
         trial, history, _ = fit_model(self.model, loss, optimizer, loader, None, epochs=self.num_epochs,
-                                      device=self.device, verbose=2)
+                                      device=self.device, verbose=1)
         self.train_metrics = {'train_acc': history[-1]['acc']}
 
     def process_batch(self, features: torch.Tensor, classes: torch.Tensor, layer: nn.Module, name) -> None:
-        pred = self.model(features.to(self.model.weight.device).view(features.shape[0], -1))
+        features = features.to(self.model.weight.device)
+        features = torchvision.transforms.functional.normalize(features, self.mean, self.std)
+        features = features.view(features.shape[0], -1)
+
+        pred = self.model(features)
         self.predictions.append((pred.cpu(), classes.cpu()))
 
     def get_result(self) -> dict:
