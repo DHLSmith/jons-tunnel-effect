@@ -47,7 +47,7 @@ def install_hooks(mdl, train_set):
             print(f"Extracting features for training probe {name}")
             fe = FeatureExtractor(mdl, name)
             ds = fe.create_tensor_dataset(train_set)
-            print(f"training probe for {name}, dimensions: {ds[0][0].shape[0]}")
+            print(f"training probe for {name}, dimensions: {ds[0][0].view(-1).shape[0]}")
             lp[name].train(ds)
             fe.unhook()  # remove hook from now used fe so it doesn't interfere with the next one
 

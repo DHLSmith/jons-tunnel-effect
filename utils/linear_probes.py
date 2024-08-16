@@ -96,10 +96,16 @@ class LinearProbe(TrainableAnalyser):
         self.std = None
 
     def train(self, dataset: TensorDataset):
-        self.mean = dataset.tensors[0].mean(dim=(0, 2, 3)).tolist()
-        self.std = dataset.tensors[0].mean(dim=(0, 2, 3)).tolist()
-        ndata = torchvision.transforms.functional.normalize(dataset.tensors[0], self.mean, self.std, inplace=True)
-        ndata = ndata.view(dataset.tensors[0].shape[0], -1)
+        if len(dataset.tensors[0].shape) == 4:
+            self.mean = dataset.tensors[0].mean(dim=(0, 2, 3)).tolist()
+            self.std = dataset.tensors[0].mean(dim=(0, 2, 3)).tolist()
+            ndata = torchvision.transforms.functional.normalize(dataset.tensors[0], self.mean, self.std)
+            ndata = ndata.view(dataset.tensors[0].shape[0], -1)
+        else:
+            self.mean = dataset.tensors[0].mean(dim=0).tolist()
+            self.std = dataset.tensors[0].mean(dim=0).tolist()
+            ndata = (dataset.tensors[0] - self.mean) / self.std
+
         dataset = TensorDataset(ndata, dataset.tensors[1])
 
         self.model = nn.Linear(dataset[0][0].shape[0], self.num_classes)
@@ -113,8 +119,12 @@ class LinearProbe(TrainableAnalyser):
 
     def process_batch(self, features: torch.Tensor, classes: torch.Tensor, layer: nn.Module, name) -> None:
         features = features.to(self.model.weight.device)
-        features = torchvision.transforms.functional.normalize(features, self.mean, self.std)
-        features = features.view(features.shape[0], -1)
+
+        if len(features.shape) == 4:
+            features = torchvision.transforms.functional.normalize(features, self.mean, self.std)
+            features = features.view(features.shape[0], -1)
+        else:
+            features = (features - self.mean) / self.std
 
         pred = self.model(features)
         self.predictions.append((pred.cpu(), classes.cpu()))
