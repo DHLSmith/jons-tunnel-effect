@@ -96,14 +96,13 @@ class LinearProbe(TrainableAnalyser):
         self.std = None
 
     def train(self, dataset: TensorDataset):
-        self.model = nn.Linear(dataset[0][0].shape[0], self.num_classes)
-
         self.mean = dataset.tensors[0].mean(dim=(0, 2, 3)).tolist()
         self.std = dataset.tensors[0].mean(dim=(0, 2, 3)).tolist()
         ndata = torchvision.transforms.functional.normalize(dataset.tensors[0], self.mean, self.std, inplace=True)
         ndata = ndata.view(dataset.tensors[0].shape[0], -1)
         dataset = TensorDataset(ndata, dataset.tensors[1])
 
+        self.model = nn.Linear(dataset[0][0].shape[0], self.num_classes)
         loss = nn.CrossEntropyLoss()
         optimizer = self.optimizer(self.model.parameters(), **self.optimizer_params)
 
