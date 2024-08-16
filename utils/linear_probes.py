@@ -54,7 +54,7 @@ class FeatureExtractor(nn.Module):
                 features.append(self(x))
                 classes.append(y)
 
-        features = torch.stack(features)
+        features = torch.cat(features)
 
         return TensorDataset(features, torch.cat(classes))
 
