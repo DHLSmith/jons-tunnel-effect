@@ -124,7 +124,7 @@ class LinearProbe(TrainableAnalyser):
             features = torchvision.transforms.functional.normalize(features, self.mean, self.std)
             features = features.view(features.shape[0], -1)
         else:
-            features = (features - self.mean) / self.std
+            features = (features - self.mean.to(self.model.weight.device)) / self.std.to(self.model.weight.device)
 
         pred = self.model(features)
         self.predictions.append((pred.cpu(), classes.cpu()))
