@@ -98,12 +98,12 @@ class LinearProbe(TrainableAnalyser):
     def train(self, dataset: TensorDataset):
         if len(dataset.tensors[0].shape) == 4:
             self.mean = dataset.tensors[0].mean(dim=(0, 2, 3)).tolist()
-            self.std = dataset.tensors[0].mean(dim=(0, 2, 3)).tolist()
+            self.std = (dataset.tensors[0].std(dim=(0, 2, 3)) + 1e-7).tolist()
             ndata = torchvision.transforms.functional.normalize(dataset.tensors[0], self.mean, self.std)
             ndata = ndata.view(dataset.tensors[0].shape[0], -1)
         else:
             self.mean = dataset.tensors[0].mean(dim=0)
-            self.std = dataset.tensors[0].mean(dim=0)
+            self.std = dataset.tensors[0].std(dim=0) + 1e-7
             ndata = (dataset.tensors[0] - self.mean) / self.std
 
         dataset = TensorDataset(ndata, dataset.tensors[1])
