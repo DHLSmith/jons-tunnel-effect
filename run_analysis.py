@@ -9,7 +9,8 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchbearer import Callback
 
-from utils.analysis import AnalyserList, NameAnalyser, TrainableAnalyser
+from utils.analysis import AnalyserList, NameAnalyser, TrainableAnalyser, PerClassVersusAnalyser
+from utils.basic_statistics import FeatureStats
 from utils.datasets import get_data
 from utils.linear_probes import LinearProbe, FeatureExtractor
 from utils.modelfitting import evaluate_model, set_seed
@@ -39,23 +40,32 @@ def install_hooks(mdl, train_set):
     handles = []
     callbacks = []
 
-    lp = {}
-    for name, m in mdl.named_modules():
-        if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
-            lp[name] = LinearProbe()
-
-            print(f"Extracting features for training probe {name}")
-            fe = FeatureExtractor(mdl, name)
-            ds = fe.create_tensor_dataset(train_set)
-            print(f"training probe for {name}, dimensions: {ds[0][0].view(-1).shape[0]}")
-            lp[name].train(ds)
-            fe.unhook()  # remove hook from now used fe so it doesn't interfere with the next one
-
+    # lp = {}
+    # for name, m in mdl.named_modules():
+    #     if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
+    #         lp[name] = LinearProbe()
+    #
+    #         print(f"Extracting features for training probe {name}")
+    #         fe = FeatureExtractor(mdl, name)
+    #         ds = fe.create_tensor_dataset(train_set)
+    #         print(f"training probe for {name}, dimensions: {ds[0][0].view(-1).shape[0]}")
+    #         lp[name].train(ds)
+    #         fe.unhook()  # remove hook from now used fe so it doesn't interfere with the next one
+    #
+    # for name, m in mdl.named_modules():
+    #     if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
+    #         analysers[name] = AnalyserList(NameAnalyser(),
+    #                                        CovarianceSpectrumStatisticsAnalyser(),
+    #                                        lp[name])
+    #
+    #         cb = AnalysisHook(analysers[name], name)
+    #         handles.append(m.register_forward_hook(cb))
+    #         callbacks.append(cb)
     for name, m in mdl.named_modules():
         if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
             analysers[name] = AnalyserList(NameAnalyser(),
-                                           CovarianceSpectrumStatisticsAnalyser(),
-                                           lp[name])
+                                           PerClassVersusAnalyser(FeatureStats()),
+                                           FeatureStats())
 
             cb = AnalysisHook(analysers[name], name)
             handles.append(m.register_forward_hook(cb))

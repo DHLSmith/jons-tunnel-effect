@@ -1,4 +1,5 @@
 import abc
+import copy
 from typing import Callable
 
 import torch
@@ -33,8 +34,64 @@ class AnalyserList(Analyser):
 
         for analyser in self.analysers:
             clz = type(analyser).__name__
+
+            if clz == 'PerClassAnalyser' and hasattr(analyser, 'analyser'):
+                clz = 'PerClass' + type(analyser.analyser).__name__
+
             for k, v in analyser.get_result().items():
                 result[f"{clz}.{k}"] = v
+
+        return result
+
+
+class PerClassAnalyser(Analyser):
+    def __init__(self, analyser):
+        super().__init__()
+        self.analyser = analyser
+        self.analysers = {}
+
+    def process_batch(self, features: torch.Tensor, classes: torch.Tensor, layer: nn.Module, name: str):
+        for c in classes.unique():
+            if c not in self.analysers:
+                self.analysers[c] = copy.deepcopy(self.analyser)
+
+            cf = features[classes == c]
+            self.analysers[c].add(cf)
+
+    def get_result(self) -> dict:
+        result = dict()
+
+        for c in self.analysers.keys():
+            r = self.analysers[c].get_result()
+            for k, v in r.items():
+                result[f"{k}_{c}"] = v
+
+        return result
+
+
+class PerClassVersusAnalyser(PerClassAnalyser):
+    def __init__(self, analyser):
+        super().__init__(analyser)
+
+    def process_batch(self, features: torch.Tensor, classes: torch.Tensor, layer: nn.Module, name: str):
+        for c in classes.unique():
+            if c not in self.analysers:
+                self.analysers[c] = copy.deepcopy(self.analyser)
+                self.analysers[f"~{c}"] = copy.deepcopy(self.analyser)
+
+            cf = features[classes == c]
+            self.analysers[c].add(cf)
+
+            ncf = features[classes != c]
+            self.analysers[f"~{c}"].add(ncf)
+
+    def get_result(self) -> dict:
+        result = dict()
+
+        for c in self.analysers.keys():
+            r = self.analysers[c].get_result()
+            for k, v in r.items():
+                result[f"{k}_{c}"] = v
 
         return result
 
@@ -49,6 +106,7 @@ class NameAnalyser(Analyser):
     """
     Just logs the layer name
     """
+
     def __init__(self):
         super().__init__()
         self.name = None
@@ -59,4 +117,3 @@ class NameAnalyser(Analyser):
 
     def get_result(self) -> dict:
         return {'name': self.name}
-
