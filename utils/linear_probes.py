@@ -96,16 +96,16 @@ class LinearProbe(TrainableAnalyser):
         self.std = None
 
     def train(self, dataset: TensorDataset):
-        if len(dataset.tensors[0].shape) == 4:
-            self.mean = dataset.tensors[0].mean(dim=(0, 2, 3)).tolist()
-            self.std = (dataset.tensors[0].std(dim=(0, 2, 3)) + 1e-7).tolist()
-            ndata = torchvision.transforms.functional.normalize(dataset.tensors[0], self.mean, self.std)
-            ndata = ndata.view(dataset.tensors[0].shape[0], -1)
-        else:
-            self.mean = dataset.tensors[0].mean(dim=0)
-            self.std = dataset.tensors[0].std(dim=0) + 1e-7
-            ndata = (dataset.tensors[0] - self.mean) / self.std
-
+        #if len(dataset.tensors[0].shape) == 4:
+        #    self.mean = dataset.tensors[0].mean(dim=(0, 2, 3)).tolist()
+        #    self.std = (dataset.tensors[0].std(dim=(0, 2, 3)) + 1e-7).tolist()
+        #    ndata = torchvision.transforms.functional.normalize(dataset.tensors[0], self.mean, self.std)
+        #    ndata = ndata.view(dataset.tensors[0].shape[0], -1)
+        #else:
+        #    self.mean = dataset.tensors[0].mean(dim=0)
+        #    self.std = dataset.tensors[0].std(dim=0) + 1e-7
+        #    ndata = (dataset.tensors[0] - self.mean) / self.std
+        ndata = dataset.tensors[0].view(dataset.tensors[0].shape[0], -1) ##
         dataset = TensorDataset(ndata, dataset.tensors[1])
 
         self.model = nn.Linear(dataset[0][0].shape[0], self.num_classes)
@@ -120,12 +120,12 @@ class LinearProbe(TrainableAnalyser):
     def process_batch(self, features: torch.Tensor, classes: torch.Tensor, layer: nn.Module, name) -> None:
         features = features.to(self.model.weight.device)
 
-        if len(features.shape) == 4:
-            features = torchvision.transforms.functional.normalize(features, self.mean, self.std)
-            features = features.view(features.shape[0], -1)
-        else:
-            features = (features - self.mean.to(self.model.weight.device)) / self.std.to(self.model.weight.device)
-
+        #if len(features.shape) == 4:
+        #    features = torchvision.transforms.functional.normalize(features, self.mean, self.std)
+        #    features = features.view(features.shape[0], -1)
+        #else:
+        #    features = (features - self.mean.to(self.model.weight.device)) / self.std.to(self.model.weight.device)
+        features = features.view(features.shape[0], -1) ##
         pred = self.model(features)
         self.predictions.append((pred.cpu(), classes.cpu()))
 

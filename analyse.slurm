@@ -1,5 +1,5 @@
-#!/bin/sh
-#SBATCH -p a100
+#!/bin/bash -l
+#SBATCH -p swarm_h100,a100,swarm_a100
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
@@ -7,7 +7,7 @@
 #SBATCH --time=24:00:00
 
 module load conda/python3
-conda activate tunnel
+source activate tunnel
 
 
 if [ "$SLURM_ARRAY_TASK_ID" -eq "1" ]; then

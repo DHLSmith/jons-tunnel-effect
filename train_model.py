@@ -9,7 +9,7 @@ from utils.models import get_model, get_model_filename
 
 PARAMETERS = {
     'vgg': {
-        'lr': 0.1,
+        'lr': 0.01,
         'momentum': 0.9,
         'weight_decay': 1e-4,
         'num_epochs': 160,

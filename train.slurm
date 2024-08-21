@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH -p a100
+#SBATCH -p swarm_h100,a100
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
 #SBATCH --nodes=1
