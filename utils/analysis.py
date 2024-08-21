@@ -56,7 +56,7 @@ class PerClassAnalyser(Analyser):
                 self.analysers[c] = copy.deepcopy(self.analyser)
 
             cf = features[classes == c]
-            self.analysers[c].add(cf)
+            self.analysers[c].process_batch(cf, classes[classes == c], layer, name)
 
     def get_result(self) -> dict:
         result = dict()
@@ -80,10 +80,10 @@ class PerClassVersusAnalyser(PerClassAnalyser):
                 self.analysers[f"~{c}"] = copy.deepcopy(self.analyser)
 
             cf = features[classes == c]
-            self.analysers[c].add(cf)
+            self.analysers[c].process_batch(cf, classes[classes == c], layer, name)
 
             ncf = features[classes != c]
-            self.analysers[f"~{c}"].add(ncf)
+            self.analysers[f"~{c}"].process_batch(ncf, classes[classes != c], layer, name)
 
     def get_result(self) -> dict:
         result = dict()
