@@ -107,7 +107,7 @@ def main():
         if args.skip and os.path.exists(f"{args.output}/{out_filename}"):
             continue
 
-        makedirs(args.output)
+        makedirs(args.output, exist_ok=True)
         print(f"{args.output}/{out_filename}")
 
         num_classes, train_set, val_set = get_data(params['dataset'], args.root)
