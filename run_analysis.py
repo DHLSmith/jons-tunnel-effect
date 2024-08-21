@@ -77,6 +77,7 @@ def install_hooks(mdl, train_set):
 
 def perform_analysis(analysers, params=None):
     results = []
+    clean_results = []
 
     for name, analyser in analysers.items():
         rec = analyser.get_result()
@@ -84,9 +85,16 @@ def perform_analysis(analysers, params=None):
         if params is not None:
             rec.update(params)
 
-        results.append(rec)
+        clean_rec = {}
+        for k, v in rec.items():
+            if isinstance(v, torch.Tensor):
+                v = 'external'
+            clean_rec[k] = v
 
-    return pd.DataFrame.from_records(results)
+        results.append(rec)
+        clean_results.append(clean_rec)
+
+    return pd.DataFrame.from_records(clean_results), results
 
 
 def main():
@@ -133,8 +141,9 @@ def main():
 
             params.update(metrics)
 
-            df = perform_analysis(analysers, params)
+            df, res = perform_analysis(analysers, params)
             df.to_csv(f"{args.output}/{out_filename}")
+            torch.save(res, f"{args.output}/{out_filename.replace('.csv', '.pt')}")
 
         del num_classes, train_set, val_set, dl, mdl, analysers, metrics, params
         gc.collect()
