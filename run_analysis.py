@@ -1,6 +1,7 @@
 import argparse
 import gc
 import os.path
+from os import mkdir, makedirs
 
 import pandas as pd
 import torch
@@ -106,6 +107,7 @@ def main():
         if args.skip and os.path.exists(f"{args.output}/{out_filename}"):
             continue
 
+        makedirs(args.output)
         print(f"{args.output}/{out_filename}")
 
         num_classes, train_set, val_set = get_data(params['dataset'], args.root)
