@@ -35,7 +35,7 @@ class AnalyserList(Analyser):
         for analyser in self.analysers:
             clz = type(analyser).__name__
 
-            if clz == 'PerClassAnalyser' and hasattr(analyser, 'analyser'):
+            if isinstance(analyser, PerClassAnalyser) and hasattr(analyser, 'analyser'):
                 clz = 'PerClass' + type(analyser.analyser).__name__
 
             for k, v in analyser.get_result().items():
