@@ -20,9 +20,12 @@ class FeatureStats(Analyser):
 
     def get_result(self) -> dict:
         rec = dict()
-        rec['channel_sparsity'] = self.channel_sparsity
-        rec['channel_activations'] = self.channel_activations
-        rec['feature_activations'] = self.feature_activations
+        rec['channel_sparsity_mean'] = self.channel_sparsity.mean()
+        rec['channel_sparsity_var'] = self.channel_sparsity.variance()
+        rec['channel_activations_mean'] = self.channel_activations.mean()
+        rec['channel_activations_var'] = self.channel_activations.variance()
+        rec['feature_activations_mean'] = self.feature_activations.mean()
+        rec['feature_activations_var'] = self.feature_activations.variance()
         return rec
 
 
