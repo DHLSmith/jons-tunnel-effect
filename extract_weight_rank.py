@@ -7,6 +7,7 @@ import torch
 from torch import nn
 from torch.linalg import LinAlgError
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from utils.datasets import get_data
 from utils.modelfitting import evaluate_model, set_seed
@@ -32,31 +33,37 @@ def install_hooks(mdl):
             handles.append(m.register_forward_hook(make_hook(name, features)))
             layers[name] = m
 
-    return layers, features
+    return layers, features, handles
 
 
-def perform_analysis(features, layers, params=None, n=8000):
+def perform_analysis(features, classes, layers, params=None, n=8000):
     results = []
 
     try:
-        for name, fvs in features.items():
+        for name, fvs in tqdm(features.items()):
             rec = {'name': name}
             if params is not None:
                 rec.update(params)
 
             f = torch.cat(fvs, dim=0)
             f = f.view(f.shape[0], -1)
-            rank = estimate_rank(f, n=n, thresh=1e-3)
+            rank = estimate_rank(f, n=n, threshold=1e-3)
 
             w = layers[name].weight
             w = w.view(w.shape[0], -1)
-            w = torch.cat([w, w], dim=0)
             w_rank = torch.linalg.matrix_rank(w, hermitian=False, rtol=1e-3).cpu().item()
 
             rec['features_rank'] = rank
             rec['features_dim'] = f.shape[1]
             rec['normalized_features_rank'] = rank / min(f.shape[1], f.shape[0])
             rec['weights_rank'] = w_rank
+
+            for c in range(classes.max() + 1):
+                cf = f[classes == c]
+                cr = estimate_rank(cf, n=n, threshold=1e-3)
+                rec['features_rank_'+str(c)] = cr
+                rec['normalized_features_rank_'+str(c)] = cr / min(cf.shape[1], cf.shape[0])
+
             results.append(rec)
     except LinAlgError:
         pass
@@ -98,11 +105,18 @@ def main():
             print("Warning: weights file didn't exist. Going to log a random model")
 
         with torch.no_grad():
-            layers, features = install_hooks(mdl)
+            layers, features, handles = install_hooks(mdl)
 
             metrics = evaluate_model(mdl, dl, 'acc', verbose=2)
+
+            for h in handles:
+                h.remove()
+
             params.update(metrics)
-            df = perform_analysis(features, layers, params, n=args.num_features)
+
+            classes = torch.cat([y.cpu() for _, y in dl])
+
+            df = perform_analysis(features, classes, layers, params, n=args.num_features)
             df.to_csv(f"{args.output}/{out_filename}")
 
         del num_classes, train_set, val_set, dl, mdl, layers, features, metrics, params

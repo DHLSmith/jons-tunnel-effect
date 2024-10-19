@@ -9,7 +9,7 @@ from utils.models import get_model, get_model_filename
 
 PARAMETERS = {
     'vgg': {
-        'lr': 0.1,
+        'lr': 0.01,
         'momentum': 0.9,
         'weight_decay': 1e-4,
         'num_epochs': 160,
@@ -81,8 +81,8 @@ def main():
     parser.add_argument('--dataset', type=str, default='cifar10', choices=['cifar10', 'cifar100'])
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--lr', type=float, default=None)
-    parser.add_argument('--root', type=str, default='/ssd')
-    parser.add_argument('--output', type=str, default='/ssd/tunnel')
+    parser.add_argument('--root', type=str, default='/scratch/jsh2/datasets')
+    parser.add_argument('--output', type=str, default='/scratch/jsh2/tunnel')
 
     args = parser.parse_args()
     set_seed(args.seed)

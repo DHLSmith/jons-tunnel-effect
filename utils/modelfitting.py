@@ -20,10 +20,12 @@ def set_seed(seed):
 
     :param seed: desired seed
     """
-    random.seed(0)
-    np.random.seed(0)
-    torch.manual_seed(0)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.benchmark = False
+    # torch.use_deterministic_algorithms(True)
 
 
 def get_device(device):
@@ -132,6 +134,12 @@ def fit_model(model, loss, opt, trainloader, valloader, epochs=1000, schedule=No
         state = torch.load(resume)
         trial.load_state_dict(state)
         trial.replay()
+    elif model_file is not None:
+        trial.state[torchbearer.EPOCH] = 0
+        trial.state[torchbearer.METRICS] = {}
+        torchbearer.callbacks.MostRecent(model_file).on_checkpoint(trial.state)
+        trial.state.pop(torchbearer.EPOCH)
+        trial.state.pop(torchbearer.METRICS)
 
     history = None
     if trainloader is not None:
