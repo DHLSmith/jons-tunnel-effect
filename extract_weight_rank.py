@@ -38,7 +38,7 @@ def install_hooks(mdl):
 
 def perform_analysis(features, classes, layers, params=None, n=8000):
     results = []
-
+    
     try:
         for name, fvs in tqdm(features.items()):
             rec = {'name': name}
@@ -57,12 +57,12 @@ def perform_analysis(features, classes, layers, params=None, n=8000):
             rec['features_dim'] = f.shape[1]
             rec['normalized_features_rank'] = rank / min(f.shape[1], f.shape[0])
             rec['weights_rank'] = w_rank
-
-            for c in range(classes.max() + 1):
-                cf = f[classes == c]
-                cr = estimate_rank(cf, n=n, threshold=1e-3)
-                rec['features_rank_'+str(c)] = cr
-                rec['normalized_features_rank_'+str(c)] = cr / min(cf.shape[1], cf.shape[0])
+            if classes is not None:
+                for c in range(classes.max() + 1):
+                    cf = f[classes == c]
+                    cr = estimate_rank(cf, n=n, threshold=1e-3)
+                    rec['features_rank_'+str(c)] = cr
+                    rec['normalized_features_rank_'+str(c)] = cr / min(cf.shape[1], cf.shape[0])
 
             results.append(rec)
     except LinAlgError:
